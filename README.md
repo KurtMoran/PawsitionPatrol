@@ -12,6 +12,15 @@ PawsitionPatrol is a cool program that lets you track and monitor the movement o
 - Plot visualization: The program generates a plot that visualizes the recorded animal positions over time.
 - Animal agnostic: PawsitionPatrol can be used to track the movement of various animals, making it flexible for different research or monitoring applications.
 
+## Installation
+
+To use PawsitionPatrol, you need to install the required Python modules. Follow the steps below to set up the necessary dependencies:
+1. Make sure you have Python installed on your system. If not, you can download it from the official Python website: [Python.org](https://www.python.org/).
+2. Clone this repository to your local machine or download the source code as a ZIP file.
+3. Open a terminal or command prompt and navigate to the project directory.
+4. Run the following command to install the required modules:
+   pip install -r requirements.txt
+   
 ## Usage
 
 1. Install the required dependencies
