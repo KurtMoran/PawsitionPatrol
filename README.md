@@ -32,10 +32,6 @@ To provide a better understanding of how PawsitionPatrol can be used, check out 
 
 Contributions to PawsitionPatrol are welcome! If you encounter any issues, have suggestions for improvements, or would like to add new features, feel free to open an issue or submit a pull request.
 
-## License
-
-PawsitionPatrol is licensed under the [MIT License](LICENSE).
-
 ## Acknowledgments
 
 We would like to acknowledge the contributions of the open-source community and the libraries utilized in this project.
