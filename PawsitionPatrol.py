@@ -43,7 +43,7 @@ zones = []  # The list of zones
 heatmap = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))))  # The heatmap of rat positions
 
 def on_mouse_click(event, x, y, flags, param):
-    global current_rectangle, zones, frame
+    global current_rectangle, zones, frame_copy
 
     if event == cv2.EVENT_LBUTTONDOWN:  # If the left button is pressed
         current_rectangle = [(x, y)]  # Start a new rectangle
@@ -81,8 +81,11 @@ cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Go back to start
 
 
 # Allow user to decide the first frame
-print("Press 'n' for next frame, 's' to start analysis.")
+print("Press 'n' for next 1 second, 'p' for previous 1 second, 's' to start analysis.")
+frame_jump = int(1 * fps)  # Set the jump to 1 second worth of frames
+frame_index = 0
 while True:
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)  # Move to the selected frame
     ret, frame = cap.read()
     if not ret:
         print("Video ended before starting analysis. Please try again.")
@@ -92,9 +95,12 @@ while True:
     key = cv2.waitKey(0)
     if key == ord('s'):
         break
-    elif key != ord('n'):
-        print("Invalid key. Press 'n' for next frame, 's' to start analysis.")
-
+    elif key == ord('n'):  # Next 1 second
+        frame_index += frame_jump
+    elif key == ord('p'):  # Previous 1 second
+        frame_index = max(0, frame_index - frame_jump)  # Ensure frame_index doesn't go below 0
+    else:
+        print("Invalid key. Press 'n' for next 1 second, 'p' for previous 1 second, 's' to start analysis.")
 cv2.destroyAllWindows()
 
 # Convert the list of points into a list of rectangles
