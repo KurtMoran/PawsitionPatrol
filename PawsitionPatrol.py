@@ -54,22 +54,39 @@ def on_mouse_click(event, x, y, flags, param):
         cv2.rectangle(param, current_rectangle[0], current_rectangle[1], (255, 0, 0), 2)  # Draw the rectangle on the image
         cv2.imshow('Image', param)  # Show the image
 
-# Ask the user to define the zones
+# Ask user to define zones
 print("Please define zones by clicking and dragging in the image.")
 cap.set(cv2.CAP_PROP_POS_MSEC, 60000)  # Skip to 60 seconds
-ret, frame = cap.read()  # Read the next frame
-cv2.namedWindow('Image')  # Create a window
-cv2.setMouseCallback('Image', on_mouse_click, param=frame)  # Set the mouse click event handler
-cv2.imshow('Image', frame)  # Show the image
-cv2.waitKey(0)  # Wait for the user to press a key
-cv2.destroyAllWindows()  # Close all windows
-cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Go back to the start of the video
+ret, frame = cap.read()
+cv2.namedWindow('Image')
+cv2.setMouseCallback('Image', on_mouse_click, param=frame)
+cv2.imshow('Image', frame)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # Go back to start
+
+# Allow user to decide the first frame
+print("Press 'n' for next frame, 's' to start analysis.")
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Video ended before starting analysis. Please try again.")
+        exit(1)
+    
+    cv2.imshow('Frame', frame)
+    key = cv2.waitKey(0)
+    if key == ord('s'):
+        break
+    elif key != ord('n'):
+        print("Invalid key. Press 'n' for next frame, 's' to start analysis.")
+
+cv2.destroyAllWindows()
 
 # Convert the list of points into a list of rectangles
-zones = [cv2.boundingRect(np.array(zone)) for zone in zones]  # This converts each pair of points into a rectangle
-zone_times = [0] * len(zones)  # Initialize the time spent in each zone to 0
+zones = [cv2.boundingRect(np.array(zone)) for zone in zones]
+zone_times = [0] * len(zones)
 
-# The list of rat positions
+# Record rat positions
 rat_positions = []
 
 # Ask the user if they want to show the video playback
@@ -122,7 +139,7 @@ while True:  # Start an infinite loop
     if show_video and center:  # If the user wants to see the video playback and the center of the rat has been found
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw a rectangle around the rat
         if current_zone is not None:  # If the rat is in a zone
-            cv2.putText(frame, "Zone: " + str(current_zone), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)  # Draw the current zone on the frame
+            cv2.putText(frame, f"Zone: {current_zone}, Coordinates: {center}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)  # Draw the current zone and coordinates on the frame
 
     if show_video:  # If the user wants to see the video playback
         for i, zone in enumerate(zones):  # For each zone
@@ -136,29 +153,43 @@ while True:  # Start an infinite loop
 cap.release()  # Release the video capture object
 csv_file.close()  # Close the CSV file
 
-# Calculate the time spent in each zone and the percentage of time spent in each zone
-total_time = tracked_frames / fps  # Calculate the total time
-zone_times = [(time / fps) for time in zone_times]  # Calculate the time spent in each zone
-zone_percentages = [(time / total_time * 100) for time in zone_times]  # Calculate the percentage of time spent in each zone
+# Calculate time in seconds and percentages
+total_time = tracked_frames / fps
+zone_times = [(time / fps) for time in zone_times]
+zone_percentages = [(time / total_time * 100) for time in zone_times]
 
 print("\nTime spent in each zone:")
 for i, (time, percentage) in enumerate(zip(zone_times, zone_percentages)):  # For each zone
     print(f"Zone {i + 1} : {time} seconds, {percentage}% of total time")  # Print the time and percentage
 
-# Plot the rat positions
-rat_positions = np.array(rat_positions)  # Convert the list of rat positions to a NumPy array
-plt.figure()  # Create a new figure
-plt.scatter(*zip(*rat_positions), s=1, c=np.linspace(0, 1, len(rat_positions)), cmap='jet')  # Draw a scatter plot of the rat positions
+# Time series plot of rat positions
+plt.figure(figsize=(10, 6))  # Create a new figure
+plt.plot(range(len(rat_positions)), [p[0] for p in rat_positions], label='X Coordinate')  # Draw a line plot of the X coordinate over time
+plt.plot(range(len(rat_positions)), [p[1] for p in rat_positions], label='Y Coordinate')  # Draw a line plot of the Y coordinate over time
 plt.title("Rat Positions Over Time")  # Set the title of the plot
+plt.xlabel("Time (frames)")
+plt.ylabel("Position (pixels)")
+plt.legend()
+plt.savefig("time_series_" + plot_file_name)  # Save the plot to a file
+plt.show()  # Show the plot
+
+# Plot the rat positions
+plt.figure(figsize=(10, 6))  # Create a new figure
+plt.scatter(*zip(*rat_positions), s=1, c=np.linspace(0, 1, len(rat_positions)), cmap='jet')  # Draw a scatter plot of the rat positions
+plt.title("Rat Positions Scatter Plot")  # Set the title of the plot
+plt.xlabel("X Coordinate (pixels)")
+plt.ylabel("Y Coordinate (pixels)")
 plt.gca().invert_yaxis()  # Invert the y axis
 plt.savefig(plot_file_name)  # Save the plot to a file
 plt.show()  # Show the plot
 
 # Show the heatmap
-plt.figure()  # Create a new figure
-plt.imshow(heatmap, cmap='hot', interpolation='nearest')  # Draw the heatmap
+plt.figure(figsize=(5, 3))  # Create a new figure
+plt.imshow(heatmap, cmap='viridis', interpolation='nearest')  # Draw the heatmap
 plt.title("Heatmap of Rat Positions")  # Set the title of the plot
+plt.xlabel("X Coordinate (pixels)")
+plt.ylabel("Y Coordinate (pixels)")
 plt.gca().invert_yaxis()  # Invert the y axis
-plt.colorbar()  # Add a colorbar
+plt.colorbar(label='Frequency')  # Add a colorbar
 plt.savefig(heatmap_file_name)  # Save the heatmap to a file
 plt.show()  # Show the plot
