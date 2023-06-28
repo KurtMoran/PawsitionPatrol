@@ -42,17 +42,31 @@ current_rectangle = []  # The current rectangle being drawn by the user
 zones = []  # The list of zones
 heatmap = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))))  # The heatmap of rat positions
 
-# The mouse click event handler
 def on_mouse_click(event, x, y, flags, param):
-    global current_rectangle
+    global current_rectangle, zones, frame
 
     if event == cv2.EVENT_LBUTTONDOWN:  # If the left button is pressed
         current_rectangle = [(x, y)]  # Start a new rectangle
     elif event == cv2.EVENT_LBUTTONUP:  # If the left button is released
         current_rectangle.append((x, y))  # Finish the rectangle
         zones.append(current_rectangle)  # Add the rectangle to the list of zones
-        cv2.rectangle(param, current_rectangle[0], current_rectangle[1], (255, 0, 0), 2)  # Draw the rectangle on the image
-        cv2.imshow('Image', param)  # Show the image
+        frame_copy = frame.copy()  # Create a copy of the original frame
+        for zone in zones:  # For each zone
+            cv2.rectangle(frame_copy, zone[0], zone[1], (255, 0, 0), 2)  # Draw the zone on the copy of the frame
+        cv2.imshow('Image', frame_copy)  # Show the copy of the frame
+    elif event == cv2.EVENT_RBUTTONDOWN:  # If the right button is pressed
+        if zones:  # If there are zones
+            zones.pop()  # Remove the last zone
+            frame_copy = frame.copy()  # Create a copy of the original frame
+            for zone in zones:  # For each remaining zone
+                cv2.rectangle(frame_copy, zone[0], zone[1], (255, 0, 0), 2)  # Draw the zone on the copy of the frame
+            cv2.imshow('Image', frame_copy)  # Show the copy of the frame
+
+print("\nInstructions:")
+print("1. Left click and drag to draw a zone.")
+print("2. Release the left click to finalize the zone.")
+print("3. Right click to remove the most recently added zone.")
+print("4. Press any key to proceed after you have finished defining zones.\n")
 
 # Ask user to define zones
 print("Please define zones by clicking and dragging in the image.")
@@ -63,7 +77,8 @@ cv2.setMouseCallback('Image', on_mouse_click, param=frame)
 cv2.imshow('Image', frame)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # Go back to start
+cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Go back to start
+
 
 # Allow user to decide the first frame
 print("Press 'n' for next frame, 's' to start analysis.")
