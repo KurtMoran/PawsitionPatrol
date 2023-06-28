@@ -9,13 +9,23 @@ from tkinter import filedialog
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib import cm
 
-# Create a root Tkinter window and hide it
-root = tk.Tk()
-root.withdraw()
+def select_video_file():
+    # Create a root Tkinter window and hide it
+    root = tk.Tk()
+    root.withdraw()
 
-# Open the file dialog
-video_path = filedialog.askopenfilename()
-cap = cv2.VideoCapture(video_path)  # Create a VideoCapture object
+    # Prompt the user to select a video file
+    print("Please select a video file.")
+    video_path = filedialog.askopenfilename()
+    cap = cv2.VideoCapture(video_path)  # Create a VideoCapture object
+
+    # Extract the base file name
+    base_file_name = os.path.splitext(os.path.basename(video_path))[0]
+
+    return cap, video_path, base_file_name
+
+# Prompt the user to select a video file
+cap, video_path, base_file_name = select_video_file()
 
 # Extract the base file name
 base_file_name = os.path.splitext(os.path.basename(video_path))[0]
