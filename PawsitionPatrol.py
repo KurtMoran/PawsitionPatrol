@@ -103,6 +103,17 @@ while True:
         print("Invalid key. Press 'n' for next 1 second, 'p' for previous 1 second, 's' to start analysis.")
 cv2.destroyAllWindows()
 
+# Ask the user for the sensitivity of the rat detection
+sensitivity = input("Please enter the sensitivity for rat detection (default is 500): ")
+if sensitivity == "":
+    sensitivity = 500
+else:
+    try:
+        sensitivity = int(sensitivity)
+    except ValueError:
+        print("Invalid input. Using default sensitivity of 500.")
+        sensitivity = 500
+
 # Convert the list of points into a list of rectangles
 zones = [cv2.boundingRect(np.array(zone)) for zone in zones]
 zone_times = [0] * len(zones)
@@ -133,7 +144,7 @@ while True:  # Start an infinite loop
     center = None  # The center of the rat
 
     for contour in contours:  # For each contour
-        if cv2.contourArea(contour) > 500:  # If the area of the contour is greater than 500
+        if cv2.contourArea(contour) > sensitivity:  # If the area of the contour is greater than 500
             (x, y, w, h) = cv2.boundingRect(contour)  # Get the bounding rectangle of the contour
             center = (int(x + w/2), int(y + h/2))  # Calculate the center of the rat
             rat_positions.append(center)  # Add the position to the list of positions
