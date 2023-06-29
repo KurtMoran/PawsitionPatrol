@@ -162,10 +162,15 @@ while True:  # Start an infinite loop
             # Update the heatmap
             heatmap[center[1], center[0]] += 1
 
+            zone_areas = []  # list to store areas of zones the rat is in
             for i, (zx, zy, zw, zh) in enumerate(zones):  # For each zone
                 if zx < center[0] < zx + zw and zy < center[1] < zy + zh:  # If the rat is in the zone
-                    current_zone = i + 1  # The rat is in this zone
-                    break  # Exit the loop
+                    zone_areas.append((i+1, zw*zh))  # store the zone index and its area
+
+            if zone_areas:  # if there are any zones the rat is in
+                zone_areas.sort(key=lambda x: x[1])  # sort by area
+                current_zone = zone_areas[0][0]  # the current zone is the smallest one
+
 
     if current_zone is None and last_known_zone is not None:  # If the rat is not in any zone but was in a zone in the last frame
         current_zone = last_known_zone  # The rat is still in the last known zone
