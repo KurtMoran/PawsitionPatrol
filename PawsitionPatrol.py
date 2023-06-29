@@ -27,13 +27,15 @@ def select_video_file():
 # Prompt the user to select a video file
 cap, video_path, base_file_name = select_video_file()
 
-# Extract the base file name
-base_file_name = os.path.splitext(os.path.basename(video_path))[0]
+# Create a new directory for the outputs
+directory = base_file_name
+os.makedirs(directory, exist_ok=True)
 
 # The names of the output files
-csv_file_name = base_file_name + "_positions.csv"  # The name of the CSV output file
-plot_file_name = base_file_name + "_plot.png"  # The name of the plot image file
-heatmap_file_name = base_file_name + "_heatmap.png"  # The name of the heatmap image file
+csv_file_name = os.path.join(directory, base_file_name + "_positions.csv")  # The name of the CSV output file
+time_series_plot_file_name = os.path.join(directory, base_file_name + "_time_series_plot.png")  # The name of the time series plot image file
+scatter_plot_file_name = os.path.join(directory, base_file_name + "_scatter_plot.png")  # The name of the scatter plot image file
+heatmap_file_name = os.path.join(directory, base_file_name + "_heatmap.png")  # The name of the heatmap image file
 
 # Get the frame rate of the video
 fps = cap.get(cv2.CAP_PROP_FPS)  # Get the frames per second
@@ -171,7 +173,6 @@ while True:  # Start an infinite loop
                 zone_areas.sort(key=lambda x: x[1])  # sort by area
                 current_zone = zone_areas[0][0]  # the current zone is the smallest one
 
-
     if current_zone is None and last_known_zone is not None:  # If the rat is not in any zone but was in a zone in the last frame
         current_zone = last_known_zone  # The rat is still in the last known zone
         center = rat_positions[-1] if rat_positions else None  # Get the last known position of the rat
@@ -217,7 +218,7 @@ plt.title("Rat Positions Over Time")  # Set the title of the plot
 plt.xlabel("Time (frames)")
 plt.ylabel("Position (pixels)")
 plt.legend()
-plt.savefig("time_series_" + plot_file_name)  # Save the plot to a file
+plt.savefig(time_series_plot_file_name)  # Save the time series plot to a file
 plt.show()  # Show the plot
 
 # Plot the rat positions
@@ -227,7 +228,7 @@ plt.title("Rat Positions Scatter Plot")  # Set the title of the plot
 plt.xlabel("X Coordinate (pixels)")
 plt.ylabel("Y Coordinate (pixels)")
 plt.gca().invert_yaxis()  # Invert the y axis
-plt.savefig(plot_file_name)  # Save the plot to a file
+plt.savefig(scatter_plot_file_name)  # Save the scatter plot to a file
 plt.show()  # Show the plot
 
 # Show the heatmap
