@@ -1,13 +1,13 @@
-import cv2  # Import OpenCV, a powerful library for image processing and computer vision
-import os  # This module provides a portable way of using operating system dependent functionality
-import numpy as np  # NumPy is a general-purpose array-processing package
-import csv  # This module implements classes to read and write tabular data in CSV format
-from scipy import stats  # SciPy is a scientific computation library that builds on NumPy
-import matplotlib.pyplot as plt  # Matplotlib is a plotting library
-import tkinter as tk
-from tkinter import filedialog
-from matplotlib.colors import TwoSlopeNorm
-from matplotlib import cm
+import cv2  # OpenCV is used for image and video analysis  # Import OpenCV, a powerful library for image processing and computer vision
+import os  # os module is used to interact with the operating system  # This module provides a portable way of using operating system dependent functionality
+import numpy as np  # NumPy is used for numerical operations  # NumPy is a general-purpose array-processing package
+import csv  # csv module is used to handle CSV files  # This module implements classes to read and write tabular data in CSV format
+from scipy import stats  # scipy.stats is used for statistical analysis  # SciPy is a scientific computation library that builds on NumPy
+import matplotlib.pyplot as plt  # Matplotlib is used for generating plots  # Matplotlib is a plotting library
+import tkinter as tk  # tkinter is used for creating GUIs
+from tkinter import filedialog  # filedialog is used for opening the file dialog
+from matplotlib.colors import TwoSlopeNorm  # TwoSlopeNorm is used for creating a colormap
+from matplotlib import cm  # cm is used for handling colormaps
 
 def select_video_file():
     # Create a root Tkinter window and hide it
@@ -47,7 +47,7 @@ fgbg = cv2.createBackgroundSubtractorMOG2()  # This is used to subtract the back
 # Prepare CSV output
 csv_file = open(csv_file_name, 'w', newline='')  # Open the CSV output file
 writer = csv.writer(csv_file)  # Create a CSV writer object
-writer.writerow(["Time", "Position", "Zone"])  # Write the header row
+writer.writerow(["Time", "Position X", "Position Y", "Zone"])  # Write the header row
 
 # Define zones
 current_rectangle = []  # The current rectangle being drawn by the user
@@ -90,7 +90,6 @@ cv2.imshow('Image', frame)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Go back to start
-
 
 # Allow user to decide the first frame
 print("Press 'n' for next 1 second, 'p' for previous 1 second, 's' to start analysis.")
@@ -181,7 +180,10 @@ while True:  # Start an infinite loop
         tracked_frames += 1  # Increase the number of tracked frames by 1
         zone_times[current_zone - 1] += 1  # Increase the time spent in the current zone by 1
 
-    writer.writerow([current_time, center, last_known_zone])  # Write the current time, position, and zone to the CSV file
+    if center is not None:
+        writer.writerow([current_time, center[0] if center else None, center[1] if center else None, last_known_zone])
+    else:
+        writer.writerow([current_time, None, None, last_known_zone])  # Write the current time, position, and zone to the CSV file
     print('Time:', current_time, 'Position:', center, 'Zone:', last_known_zone)  # Print the current time, position, and zone
 
     if show_video and center:  # If the user wants to see the video playback and the center of the rat has been found
@@ -214,7 +216,8 @@ for i, (time, percentage) in enumerate(zip(zone_times, zone_percentages)):  # Fo
 plt.figure(figsize=(10, 6))  # Create a new figure
 plt.plot(range(len(rat_positions)), [p[0] for p in rat_positions], label='X Coordinate')  # Draw a line plot of the X coordinate over time
 plt.plot(range(len(rat_positions)), [p[1] for p in rat_positions], label='Y Coordinate')  # Draw a line plot of the Y coordinate over time
-plt.title("Rat Positions Over Time")  # Set the title of the plot
+plt.title("Rat Positions Over Time")
+plt.legend(["X Coordinate", "Y Coordinate"])  # Set the title of the plot
 plt.xlabel("Time (frames)")
 plt.ylabel("Position (pixels)")
 plt.legend()
@@ -224,10 +227,12 @@ plt.show()  # Show the plot
 # Plot the rat positions
 plt.figure(figsize=(10, 6))  # Create a new figure
 plt.scatter(*zip(*rat_positions), s=1, c=np.linspace(0, 1, len(rat_positions)), cmap='jet')  # Draw a scatter plot of the rat positions
-plt.title("Rat Positions Scatter Plot")  # Set the title of the plot
+plt.title("Rat Positions Scatter Plot")
+plt.legend(["Position"])  # Set the title of the plot
 plt.xlabel("X Coordinate (pixels)")
 plt.ylabel("Y Coordinate (pixels)")
 plt.gca().invert_yaxis()  # Invert the y axis
+plt.legend(["Rat Positions"])
 plt.savefig(scatter_plot_file_name)  # Save the scatter plot to a file
 plt.show()  # Show the plot
 
