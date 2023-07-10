@@ -203,12 +203,3 @@ while True:  #Start an infinite loop
 cap.release()
 cv2.destroyAllWindows()  #Release the video capture object
 csv_file.close()  #Close the CSV file
-
-#Calculate time in seconds and percentages
-total_time = tracked_frames / fps
-zone_times = [(time / fps) for time in zone_times]
-zone_percentages = [(time / total_time * 100) for time in zone_times]
-
-print("\nTime spent in each zone:")
-for i, (time, percentage) in enumerate(zip(zone_times, zone_percentages)):  #For each zone
-    print(f"Zone {i + 1} : {time} seconds, {percentage}% of total time")  #Print the time and percentage
