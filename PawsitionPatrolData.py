@@ -28,7 +28,7 @@ def analyze_data(data):
 
     # Identify zone entry and exit times
     zone_changes = data_sorted['Zone'].ne(data_sorted['Zone'].shift())
-    entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone']]
+    entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone', 'Position X', 'Position Y']]
 
     return seconds_per_zone, cumulative_time, entry_exit_times
 
@@ -39,6 +39,12 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     # Scatter plot of positions over time
     plt.figure(figsize=(10, 8))
     plt.scatter(data['Position X'], data['Position Y'], c=data['Time'], cmap='viridis', alpha=0.7)
+    
+    # Markers for zone entries
+    for i in range(len(entry_exit_times)):
+        plt.scatter(entry_exit_times.iloc[i]['Position X'], entry_exit_times.iloc[i]['Position Y'], 
+                    c='black', s=100, alpha=0.8)
+    
     plt.colorbar(label='Time')
     plt.xlabel('Position X')
     plt.ylabel('Position Y')
@@ -48,7 +54,7 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
 
     # Heatmap of positions
     plt.figure(figsize=(10, 8))
-    plt.hist2d(data['Position X'], data['Position Y'], bins=[50,50], cmap='inferno')
+    plt.hist2d(data['Position X'], data['Position Y'], bins=[50,50], cmap='coolwarm')
     plt.colorbar(label='Frequency')
     plt.xlabel('Position X')
     plt.ylabel('Position Y')

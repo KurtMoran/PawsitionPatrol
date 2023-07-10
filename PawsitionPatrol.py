@@ -33,16 +33,13 @@ os.makedirs(directory, exist_ok=True)
 
 #The names of the output files
 csv_file_name = os.path.join(directory, base_file_name + "_positions.csv")  #The name of the CSV output file
-time_series_plot_file_name = os.path.join(directory, base_file_name + "_time_series_plot.png")  #The name of the time series plot image file
-scatter_plot_file_name = os.path.join(directory, base_file_name + "_scatter_plot.png")  #The name of the scatter plot image file
-heatmap_file_name = os.path.join(directory, base_file_name + "_heatmap.png")  #The name of the heatmap image file
 
 #Get the frame rate of the video
 fps = cap.get(cv2.CAP_PROP_FPS)  #Get the frames per second
 frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  #Get the total number of frames
 
 #Create the background subtractor object
-fgbg = cv2.createBackgroundSubtractorMOG2()  #This is used to subtract the background from each frame
+fgbg = cv2.createBackgroundSubtractorKNN()
 
 #Prepare CSV output
 csv_file = open(csv_file_name, 'w', newline='')  #Open the CSV output file
@@ -111,7 +108,7 @@ while True:
     elif key == ord('p'):  #Previous 1 second
         frame_index = max(0, frame_index - frame_jump)  #Ensure frame_index doesn't go below 0
     else:
-        print("Invalid key. Press 'n' for next 1 second, 'p' for previous 1 second, 's' to start analysis.")
+        print("Invalid key. Press 'n' for next 1 second, 'p' for previous 1 second, 's' start analysis.")
 cv2.destroyAllWindows()
 
 #Ask the user for the sensitivity of the rat detection
@@ -191,7 +188,10 @@ while True:  #Start an infinite loop
         if current_zone is not None:  #If the rat is in a zone
             cv2.putText(frame, f"Zone: {current_zone}, Coordinates: {center}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)  #Draw the current zone and coordinates on the frame
 
-    if show_video:  #If the user wants to see the video playback
+    if show_video:
+    # If the user wants to see the video playback
+        cv2.imshow('Thresholded Frame', thresh)  # Show the thresholded frame
+  #If the user wants to see the video playback
         for i, zone in enumerate(zones):  #For each zone
             cv2.rectangle(frame, (zone[0], zone[1]), (zone[0] + zone[2], zone[1] + zone[3]), (255, 0, 0), 2)  #Draw the zone
             cv2.putText(frame, str(i + 1), (zone[0] + 5, zone[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)  #Draw the zone number
@@ -200,7 +200,8 @@ while True:  #Start an infinite loop
         if cv2.waitKey(1) & 0xFF == ord('q'):  #If the user presses the 'q' key
             break  #Exit the loop
 
-cap.release()  #Release the video capture object
+cap.release()
+cv2.destroyAllWindows()  #Release the video capture object
 csv_file.close()  #Close the CSV file
 
 #Calculate time in seconds and percentages
@@ -211,38 +212,3 @@ zone_percentages = [(time / total_time * 100) for time in zone_times]
 print("\nTime spent in each zone:")
 for i, (time, percentage) in enumerate(zip(zone_times, zone_percentages)):  #For each zone
     print(f"Zone {i + 1} : {time} seconds, {percentage}% of total time")  #Print the time and percentage
-
-#Time series plot of rat positions
-plt.figure(figsize=(10, 6))  #Create a new figure
-plt.plot(range(len(rat_positions)), [p[0] for p in rat_positions], label='X Coordinate')  #Draw a line plot of the X coordinate over time
-plt.plot(range(len(rat_positions)), [p[1] for p in rat_positions], label='Y Coordinate')  #Draw a line plot of the Y coordinate over time
-plt.title("Rat Positions Over Time")
-plt.legend(["X Coordinate", "Y Coordinate"])  #Set the title of the plot
-plt.xlabel("Time (frames)")
-plt.ylabel("Position (pixels)")
-plt.legend()
-plt.savefig(time_series_plot_file_name)  #Save the time series plot to a file
-plt.show()  #Show the plot
-
-#Plot the rat positions
-plt.figure(figsize=(10, 6))  #Create a new figure
-plt.scatter(*zip(*rat_positions), s=1, c=np.linspace(0, 1, len(rat_positions)), cmap='jet')  #Draw a scatter plot of the rat positions
-plt.title("Rat Positions Scatter Plot")
-plt.legend(["Position"])  #Set the title of the plot
-plt.xlabel("X Coordinate (pixels)")
-plt.ylabel("Y Coordinate (pixels)")
-plt.gca().invert_yaxis()  #Invert the y axis
-plt.legend(["Rat Positions"])
-plt.savefig(scatter_plot_file_name)  #Save the scatter plot to a file
-plt.show()  #Show the plot
-
-#Show the heatmap
-plt.figure(figsize=(5, 3))  #Create a new figure
-plt.imshow(heatmap, cmap='viridis', interpolation='nearest')  #Draw the heatmap
-plt.title("Heatmap of Rat Positions")  #Set the title of the plot
-plt.xlabel("X Coordinate (pixels)")
-plt.ylabel("Y Coordinate (pixels)")
-plt.gca().invert_yaxis()  #Invert the y axis
-plt.colorbar(label='Frequency')  #Add a colorbar
-plt.savefig(heatmap_file_name)  #Save the heatmap to a file
-plt.show()  #Show the plot
