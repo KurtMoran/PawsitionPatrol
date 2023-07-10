@@ -85,13 +85,15 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     # Timeline of zone entries
     plt.figure(figsize=(15, 6))
     for i in range(len(entry_exit_times) - 1):
-        plt.hlines(y=entry_exit_times.iloc[i, 1], xmin=entry_exit_times.iloc[i, 0], xmax=entry_exit_times.iloc[i+1, 0], 
-                   colors=colors[entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
+        if pd.notna(entry_exit_times.iloc[i, 1]):
+            plt.hlines(y=entry_exit_times.iloc[i, 1], xmin=entry_exit_times.iloc[i, 0], xmax=entry_exit_times.iloc[i+1, 0], 
+                    colors=colors[entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
     plt.xlabel('Time')
     plt.ylabel('Zone')
     plt.yticks([1, 2, 3])
     plt.title('Timeline of Zone Entries')
     plt.grid(True)
+
 
     # Show all plots
     plt.show()
