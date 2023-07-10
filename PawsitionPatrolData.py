@@ -4,6 +4,8 @@ from pandas.plotting import lag_plot
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.animation as animation
+import matplotlib.colors as mcolors
+
 
 def load_data(file_path):
     # Load the CSV file
@@ -61,6 +63,22 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     plt.title("Heatmap of the rat's positions in the maze")
     plt.gca().invert_yaxis()  # Invert the y-axis
     plt.grid(True)
+
+    # Table of sum of seconds per zone
+    fig, ax = plt.subplots(figsize=(8, 4))
+    table_data = pd.DataFrame({'Zone': seconds_per_zone.index, 'Seconds': seconds_per_zone.values})
+    table_data['Seconds'] = table_data['Seconds'].round(3)  # Round the 'Seconds' column to 3 decimal places
+    table = ax.table(cellText=table_data.values, colLabels=table_data.columns, cellLoc='center', loc='center',
+                    colWidths=[0.15, 0.15], cellColours=[[mcolors.CSS4_COLORS['lightsteelblue']]*2]*len(table_data))
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    table.scale(1, 1.5)
+    table.auto_set_column_width([0, 1])
+    ax.axis('off')
+
+    # Output table data in text form to the terminal
+    print("Sum of Seconds in Each Zone:")
+    print(table_data.to_string(index=False))
 
     # Bar plot for sum of seconds per zone
     plt.figure(figsize=(10, 6))
