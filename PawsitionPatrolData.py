@@ -6,7 +6,6 @@ from tkinter import filedialog
 import matplotlib.animation as animation
 import matplotlib.colors as mcolors
 
-
 def load_data(file_path):
     # Load the CSV file
     data = pd.read_csv(file_path)
