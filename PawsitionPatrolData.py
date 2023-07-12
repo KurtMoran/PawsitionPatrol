@@ -36,7 +36,10 @@ def analyze_data(data):
 
 def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     # Define colors for each zone
-    colors = {1.0: 'red', 2.0: 'green', 3.0: 'blue'}
+    zones = sorted(data['Zone'].dropna().unique())
+    num_zones = len(zones)
+    cmap = plt.get_cmap('viridis')
+    colors = {zone: cmap(i / num_zones) for i, zone in enumerate(zones)}
 
     # Scatter plot of positions over time
     plt.figure(figsize=(10, 8))
@@ -105,13 +108,12 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     for i in range(len(entry_exit_times) - 1):
         if pd.notna(entry_exit_times.iloc[i, 1]):
             plt.hlines(y=entry_exit_times.iloc[i, 1], xmin=entry_exit_times.iloc[i, 0], xmax=entry_exit_times.iloc[i+1, 0], 
-                    colors=colors[entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
+                       colors=colors[entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
     plt.xlabel('Time')
     plt.ylabel('Zone')
-    plt.yticks([1, 2, 3])
+    plt.yticks(zones)
     plt.title('Timeline of Zone Entries')
     plt.grid(True)
-
 
     # Show all plots
     plt.show()
