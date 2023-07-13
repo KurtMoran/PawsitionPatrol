@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.plotting import lag_plot
@@ -16,7 +17,7 @@ def clean_data(data):
     data_clean = data.dropna(subset=['Position X', 'Position Y'])
     return data_clean
 
-def analyze_data(data):
+def analyze_data(data, subject):
     # Calculate the time interval between each row
     data_sorted = data.sort_values('Time')
     data_sorted['Time Difference'] = data_sorted['Time'].diff()
@@ -29,9 +30,16 @@ def analyze_data(data):
 
     # Identify zone entry and exit times
     zone_changes = data_sorted['Zone'].ne(data_sorted['Zone'].shift())
-    entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone', 'Position X', 'Position Y']]
+    entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone']]
 
-    return seconds_per_zone, cumulative_time, entry_exit_times
+    # Create a dataframe for zone latency
+    zone_latency = entry_exit_times.copy()
+    zone_latency['Subject'] = subject
+    zone_latency.columns = ['Zone Change Time', 'Entering Zone', 'Subject']
+    zone_latency['Exiting Zone'] = zone_latency['Entering Zone'].shift()
+    zone_latency = zone_latency[['Subject', 'Zone Change Time', 'Entering Zone', 'Exiting Zone']]
+
+    return seconds_per_zone, cumulative_time, entry_exit_times, zone_latency
 
 def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     # Define colors for each zone
@@ -43,12 +51,7 @@ def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
     # Scatter plot of positions over time
     plt.figure(figsize=(10, 8))
     plt.scatter(data['Position X'], data['Position Y'], c=data['Time'], cmap='viridis', alpha=0.7)
-    
-    # Markers for zone entries
-    for i in range(len(entry_exit_times)):
-        plt.scatter(entry_exit_times.iloc[i]['Position X'], entry_exit_times.iloc[i]['Position Y'], 
-                    c='black', s=100, alpha=0.8)
-    
+
     plt.colorbar(label='Time')
     plt.xlabel('Position X')
     plt.ylabel('Position Y')
@@ -146,12 +149,21 @@ file_path = filedialog.askopenfilename(title="Select CSV file", filetypes=(("CSV
 
 # Check if a file was selected
 if file_path:
+    # Extract subject from file name
+    file_name = os.path.basename(file_path)
+    subject = 'KM' + file_name.split('KM')[1].split('.')[0]
+
     # Load and clean the data
     data = load_data(file_path)
     data_clean = clean_data(data)
 
     # Analyze the data
-    seconds_per_zone, cumulative_time, entry_exit_times = analyze_data(data_clean)
+    seconds_per_zone, cumulative_time, entry_exit_times, zone_latency = analyze_data(data_clean, subject)
+
+    # Save zone_latency to a CSV file
+    output_dir = os.path.dirname(file_path)
+    output_file_path = os.path.join(output_dir, subject + '_Zone_Latency.csv')
+    zone_latency.to_csv(output_file_path, index=False)
 
     # Plot the data
     plot_data(data_clean, seconds_per_zone, cumulative_time, entry_exit_times)
