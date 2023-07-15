@@ -1,171 +1,172 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from pandas.plotting import lag_plot
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.animation as animation
 import matplotlib.colors as mcolors
 
-def load_data(file_path):
-    # Load the CSV file
-    data = pd.read_csv(file_path)
-    return data
+class PawsitionPatrol:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.subject = self.extract_subject_from_filename()
+        self.data = self.load_data()
+        self.data_clean = self.clean_data()
+        self.seconds_per_zone, self.cumulative_time, self.entry_exit_times, self.zone_latency = self.analyze_data()
 
-def clean_data(data):
-    # Remove rows with missing position data
-    data_clean = data.dropna(subset=['Position X', 'Position Y'])
-    return data_clean
+    def extract_subject_from_filename(self):
+        file_name = os.path.basename(self.file_path)
+        return 'KM' + file_name.split('KM')[1].split('.')[0]
 
-def analyze_data(data, subject):
-    # Calculate the time interval between each row
-    data_sorted = data.sort_values('Time')
-    data_sorted['Time Difference'] = data_sorted['Time'].diff()
+    def load_data(self):
+        try:
+            return pd.read_csv(self.file_path)
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            return NoneF
 
-    # Sum of seconds per zone
-    seconds_per_zone = data_sorted.groupby('Zone')['Time Difference'].sum()
+    def clean_data(self):
+        return self.data.dropna(subset=['Position X', 'Position Y'])
 
-    # Cumulative time in each zone
-    cumulative_time = data_sorted.groupby('Zone')['Time Difference'].cumsum()
+    def analyze_data(self):
+        data_sorted = self.data_clean.sort_values('Time')
+        data_sorted['Time Difference'] = data_sorted['Time'].diff()
+        seconds_per_zone = data_sorted.groupby('Zone')['Time Difference'].sum()
+        cumulative_time = data_sorted.groupby('Zone')['Time Difference'].cumsum()
+        zone_changes = data_sorted['Zone'].ne(data_sorted['Zone'].shift())
+        entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone']]
+        zone_latency = self.calculate_zone_latency(entry_exit_times)
+        return seconds_per_zone, cumulative_time, entry_exit_times, zone_latency
 
-    # Identify zone entry and exit times
-    zone_changes = data_sorted['Zone'].ne(data_sorted['Zone'].shift())
-    entry_exit_times = data_sorted.loc[zone_changes, ['Time', 'Zone']]
+    def calculate_zone_latency(self, entry_exit_times):
+        zone_latency = entry_exit_times.copy()
+        zone_latency['Subject'] = self.subject
+        zone_latency.columns = ['Zone Change Time', 'Entering Zone', 'Subject']
+        zone_latency['Exiting Zone'] = zone_latency['Entering Zone'].shift()
+        zone_latency = zone_latency[['Subject', 'Zone Change Time', 'Entering Zone', 'Exiting Zone']]
+        return zone_latency
+    
+    def write_zone_latency_to_csv(self):
+        output_dir = os.path.dirname(self.file_path)
+        output_file_path = os.path.join(output_dir, self.subject + '_Zone_Latency.csv')
+        self.zone_latency.to_csv(output_file_path, index=False)
 
-    # Create a dataframe for zone latency
-    zone_latency = entry_exit_times.copy()
-    zone_latency['Subject'] = subject
-    zone_latency.columns = ['Zone Change Time', 'Entering Zone', 'Subject']
-    zone_latency['Exiting Zone'] = zone_latency['Entering Zone'].shift()
-    zone_latency = zone_latency[['Subject', 'Zone Change Time', 'Entering Zone', 'Exiting Zone']]
+    def plot_data(self):
+        zones = sorted(self.data_clean['Zone'].dropna().unique())
+        num_zones = len(zones)
+        cmap = plt.get_cmap('viridis')
+        colors = {zone: cmap(i / num_zones) for i, zone in enumerate(zones)}
 
-    return seconds_per_zone, cumulative_time, entry_exit_times, zone_latency
+        self.scatter_plot_positions_over_time(colors)
+        self.heatmap_of_positions()
+        self.table_and_bar_plot_seconds_per_zone()
+        self.plot_cumulative_time_per_zone()
+        self.timeline_of_zone_entries(colors)
+        self.animate_positions_over_time()
 
-def plot_data(data, seconds_per_zone, cumulative_time, entry_exit_times):
-    # Define colors for each zone
-    zones = sorted(data['Zone'].dropna().unique())
-    num_zones = len(zones)
-    cmap = plt.get_cmap('viridis')
-    colors = {zone: cmap(i / num_zones) for i, zone in enumerate(zones)}
+    def scatter_plot_positions_over_time(self, colors):
+        plt.figure(figsize=(10, 8))
+        plt.scatter(self.data_clean['Position X'], self.data_clean['Position Y'], c=self.data_clean['Time'], cmap='viridis', alpha=0.7)
+        plt.colorbar(label='Time')
+        plt.xlabel('Position X')
+        plt.ylabel('Position Y')
+        plt.title('Path of the rat in the maze over time')
+        plt.gca().invert_yaxis()  
+        plt.grid(True)
 
-    # Scatter plot of positions over time
-    plt.figure(figsize=(10, 8))
-    plt.scatter(data['Position X'], data['Position Y'], c=data['Time'], cmap='viridis', alpha=0.7)
+    def heatmap_of_positions(self):
+        plt.figure(figsize=(10, 8))
+        plt.hist2d(self.data_clean['Position X'], self.data_clean['Position Y'], bins=[50,50], cmap='coolwarm')
+        plt.colorbar(label='Frequency')
+        plt.xlabel('Position X')
+        plt.ylabel('Position Y')
+        plt.title("Heatmap of the rat's positions in the maze")
+        plt.gca().invert_yaxis()
+        plt.grid(True)
 
-    plt.colorbar(label='Time')
-    plt.xlabel('Position X')
-    plt.ylabel('Position Y')
-    plt.title('Path of the rat in the maze over time')
-    plt.gca().invert_yaxis()  # Invert the y-axis
-    plt.grid(True)
+    def table_and_bar_plot_seconds_per_zone(self):
+        fig, ax = plt.subplots(figsize=(8, 4))
+        table_data = pd.DataFrame({'Zone': self.seconds_per_zone.index, 'Seconds': self.seconds_per_zone.values})
+        table_data['Seconds'] = table_data['Seconds'].round(3)
+        table = ax.table(cellText=table_data.values, colLabels=table_data.columns, cellLoc='center', loc='center',
+                        colWidths=[0.15, 0.15], cellColours=[[mcolors.CSS4_COLORS['lightsteelblue']]*2]*len(table_data))
+        table.auto_set_font_size(False)
+        table.set_fontsize(12)
+        table.scale(1, 1.5)
+        table.auto_set_column_width([0, 1])
+        ax.axis('off')
 
-    # Heatmap of positions
-    plt.figure(figsize=(10, 8))
-    plt.hist2d(data['Position X'], data['Position Y'], bins=[50,50], cmap='coolwarm')
-    plt.colorbar(label='Frequency')
-    plt.xlabel('Position X')
-    plt.ylabel('Position Y')
-    plt.title("Heatmap of the rat's positions in the maze")
-    plt.gca().invert_yaxis()  # Invert the y-axis
-    plt.grid(True)
+        print("Sum of Seconds in Each Zone:")
+        print(table_data.to_string(index=False))
 
-    # Table of sum of seconds per zone
-    fig, ax = plt.subplots(figsize=(8, 4))
-    table_data = pd.DataFrame({'Zone': seconds_per_zone.index, 'Seconds': seconds_per_zone.values})
-    table_data['Seconds'] = table_data['Seconds'].round(3)  # Round the 'Seconds' column to 3 decimal places
-    table = ax.table(cellText=table_data.values, colLabels=table_data.columns, cellLoc='center', loc='center',
-                    colWidths=[0.15, 0.15], cellColours=[[mcolors.CSS4_COLORS['lightsteelblue']]*2]*len(table_data))
-    table.auto_set_font_size(False)
-    table.set_fontsize(12)
-    table.scale(1, 1.5)
-    table.auto_set_column_width([0, 1])
-    ax.axis('off')
+        plt.figure(figsize=(10, 6))
+        self.seconds_per_zone.plot(kind='bar', color='skyblue', edgecolor='black')
+        plt.xlabel('Zone')
+        plt.ylabel('Seconds')
+        plt.title('Sum of Seconds Spent in Each Zone')
+        plt.grid(axis='y')
 
-    # Output table data in text form to the terminal
-    print("Sum of Seconds in Each Zone:")
-    print(table_data.to_string(index=False))
+    def plot_cumulative_time_per_zone(self):
+        plt.figure(figsize=(10, 6))
+        for zone in self.seconds_per_zone.index:
+            zone_cumulative_time = self.cumulative_time[self.data_clean['Zone'] == zone]
+            plt.plot(self.data_clean.loc[self.data_clean['Zone'] == zone, 'Time'], zone_cumulative_time, marker='o', linestyle='-', linewidth=2, markersize=5,
+                    label='Zone {}'.format(zone))
+        plt.xlabel('Time')
+        plt.ylabel('Cumulative Time (Seconds)')
+        plt.title('Cumulative Time in Each Zone')
+        plt.grid(True)
+        plt.legend()
 
-    # Bar plot for sum of seconds per zone
-    plt.figure(figsize=(10, 6))
-    seconds_per_zone.plot(kind='bar', color='skyblue', edgecolor='black')
-    plt.xlabel('Zone')
-    plt.ylabel('Seconds')
-    plt.title('Sum of Seconds Spent in Each Zone')
-    plt.grid(axis='y')
+    def timeline_of_zone_entries(self, colors):
+        plt.figure(figsize=(15, 6))
+        for i in range(len(self.entry_exit_times) - 1):
+            if pd.notna(self.entry_exit_times.iloc[i, 1]):
+                plt.hlines(y=self.entry_exit_times.iloc[i, 1], xmin=self.entry_exit_times.iloc[i, 0], xmax=self.entry_exit_times.iloc[i+1, 0], 
+                        colors=colors[self.entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
+        plt.xlabel('Time')
+        plt.ylabel('Zone')
+        plt.yticks(self.seconds_per_zone.index)
+        plt.title('Timeline of Zone Entries')
+        plt.grid(True)
 
-    # Cumulative time in each zone
-    plt.figure(figsize=(10, 6))
-    for zone in seconds_per_zone.index:
-        zone_cumulative_time = cumulative_time[data['Zone'] == zone]
-        plt.plot(data.loc[data['Zone'] == zone, 'Time'], zone_cumulative_time, marker='o', linestyle='-', linewidth=2, markersize=5,
-                 label='Zone {}'.format(zone))
-    plt.xlabel('Time')
-    plt.ylabel('Cumulative Time (Seconds)')
-    plt.title('Cumulative Time in Each Zone')
-    plt.grid(True)
-    plt.legend()
+    def animate_positions_over_time(self):
+        fig = plt.figure()
+        ax = plt.axes(xlim=(0, max(self.data_clean['Position X'])), ylim=(0, max(self.data_clean['Position Y'])))
 
-    # Timeline of zone entries
-    plt.figure(figsize=(15, 6))
-    for i in range(len(entry_exit_times) - 1):
-        if pd.notna(entry_exit_times.iloc[i, 1]):
-            plt.hlines(y=entry_exit_times.iloc[i, 1], xmin=entry_exit_times.iloc[i, 0], xmax=entry_exit_times.iloc[i+1, 0], 
-                       colors=colors[entry_exit_times.iloc[i, 1]], linestyles='solid', linewidth=15)
-    plt.xlabel('Time')
-    plt.ylabel('Zone')
-    plt.yticks(zones)
-    plt.title('Timeline of Zone Entries')
-    plt.grid(True)
+        scatter, = ax.plot([], [], 'o')
 
-    # Show all plots
-    plt.show()
+        def init():
+            scatter.set_data([], [])
+            return scatter,
 
-    # Animation of positions leaving a trace over time
-    fig = plt.figure()
-    ax = plt.axes(xlim=(0, max(data['Position X'])), ylim=(0, max(data['Position Y'])))
+        def animate(i):
+            x = self.data_clean['Position X'].iloc[:i+1]
+            y = max(self.data_clean['Position Y']) - self.data_clean['Position Y'].iloc[:i+1]
+            scatter.set_data(x, y)
+            return scatter,
 
-    scatter, = ax.plot([], [], 'o')
+        anim = animation.FuncAnimation(fig, animate, init_func=init, frames=len(self.data_clean), interval=2, blit=True)
 
-    def init():
-        scatter.set_data([], [])
-        return scatter,
+        plt.show()
 
-    def animate(i):
-        x = data['Position X'].iloc[:i+1]
-        y = max(data['Position Y']) - data['Position Y'].iloc[:i+1]  # Invert the y-coordinates
-        scatter.set_data(x, y)
-        return scatter,
+    def run(self):
+        if self.data is not None:
+            self.write_zone_latency_to_csv()
+            self.plot_data()
 
-    anim = animation.FuncAnimation(fig, animate, init_func=init, frames=len(data), interval=2, blit=True)
+def select_file():
+    root = tk.Tk()
+    root.withdraw() 
+    return filedialog.askopenfilename(title="Select CSV file", filetypes=(("CSV files", "*.csv"),))
 
-    plt.show()
+def main():
+    file_path = select_file()
+    if file_path:
+        patrol = PawsitionPatrol(file_path)
+        patrol.run()
+    else:
+        print("No file selected.")
 
-# Create a Tkinter root window
-root = tk.Tk()
-root.withdraw()  # Hide the root window
-
-# Prompt the user to select the CSV file
-file_path = filedialog.askopenfilename(title="Select CSV file", filetypes=(("CSV files", "*.csv"),))
-
-# Check if a file was selected
-if file_path:
-    # Extract subject from file name
-    file_name = os.path.basename(file_path)
-    subject = 'KM' + file_name.split('KM')[1].split('.')[0]
-
-    # Load and clean the data
-    data = load_data(file_path)
-    data_clean = clean_data(data)
-
-    # Analyze the data
-    seconds_per_zone, cumulative_time, entry_exit_times, zone_latency = analyze_data(data_clean, subject)
-
-    # Save zone_latency to a CSV file
-    output_dir = os.path.dirname(file_path)
-    output_file_path = os.path.join(output_dir, subject + '_Zone_Latency.csv')
-    zone_latency.to_csv(output_file_path, index=False)
-
-    # Plot the data
-    plot_data(data_clean, seconds_per_zone, cumulative_time, entry_exit_times)
-else:
-    print("No file selected.")
+if __name__ == "__main__":
+    main()
