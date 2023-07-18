@@ -23,7 +23,7 @@ class PawsitionPatrol:
             return pd.read_csv(self.file_path)
         except Exception as e:
             print(f"Error loading data: {e}")
-            return NoneF
+            return None
 
     def clean_data(self):
         return self.data.dropna(subset=['Position X', 'Position Y'])
@@ -50,6 +50,10 @@ class PawsitionPatrol:
         output_dir = os.path.dirname(self.file_path)
         output_file_path = os.path.join(output_dir, self.subject + '_Zone_Latency.csv')
         self.zone_latency.to_csv(output_file_path, index=False)
+
+    def write_zone_times_to_csv(self):
+        table_data = pd.DataFrame({'Zone': self.seconds_per_zone.index, 'Total Time': self.seconds_per_zone.values.round(3)})
+        table_data.to_csv(os.path.join(os.path.dirname(self.file_path), self.subject + '_Zone_Times.csv'), index=False)
 
     def plot_data(self):
         zones = sorted(self.data_clean['Zone'].dropna().unique())
@@ -153,6 +157,7 @@ class PawsitionPatrol:
     def run(self):
         if self.data is not None:
             self.write_zone_latency_to_csv()
+            self.write_zone_times_to_csv()
             self.plot_data()
 
 def select_file():
