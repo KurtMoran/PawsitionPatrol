@@ -12,16 +12,16 @@ class PawsitionPatrol:
         #Initialize instance variables
         self.root_dir = root_dir
         self.zones = []  #List to store defined zones
-        self.rat_positions = []  #List to store positions of the detected rat
-        self.last_known_zone = None  #Store the last known zone of the rat
-        self.sensitivity = 500  #Sensitivity for rat detection
+        self.rat_positions = []  #List to store positions of the detected hamster
+        self.last_known_zone = None  #Store the last known zone of the hamster
+        self.sensitivity = 500  #Sensitivity for hamster detection
         self.show_video = False  #Boolean to determine if the video playback should be shown
         self.video_path = None  #Path to the video file
         self.cap = None  #VideoCapture object
         self.base_file_name = None  #Base name of the video file
         self.fgbg = cv2.createBackgroundSubtractorMOG2()  #Background subtractor object
         self.fps = None  #Frames per second of the video
-        self.csv_file = None  #CSV file to save the rat's positions and corresponding times
+        self.csv_file = None  #CSV file to save the hamster's positions and corresponding times
         self.writer = None  #CSV writer
         self.frame_index = 0  #Index of the current frame
         self.frame_jump = 0  #Number of frames to jump for next or previous second of the video
@@ -92,7 +92,7 @@ class PawsitionPatrol:
     #Method to set sensitivity
     def set_sensitivity(self):
         #Get the sensitivity from the user and validate the input
-        sensitivity = input("Please enter the sensitivity for rat detection (default is 500): ")
+        sensitivity = input("Please enter the sensitivity for hamster detection (default is 500): ")
         if sensitivity:
             try:
                 self.sensitivity = int(sensitivity)
@@ -139,26 +139,43 @@ class PawsitionPatrol:
             fgmask = self.fgbg.apply(frame)
             _, thresh = cv2.threshold(fgmask, 200, 255, cv2.THRESH_BINARY)
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            '''
+            1. We have a contour of interest.
+            2. Around this shape, draw the smallest possible rectangle.
+            3. Find the midpoint of this rectangle; this is our center point.
+
+            4. To determine if the center point is inside a designated area (zone):
+            - Each zone has defined boundaries: left, right, top, and bottom edges.
+            - The x-coordinate of the center should be between the left and right edges.
+            - The y-coordinate of the center should be between the top and bottom edges.
+            - If both conditions are met, the center is inside that zone.
+
+            5. If the center point is inside multiple overlapping zones, identify all such zones.
+            6. Out of these zones, choose the one with the smallest area as the main zone.
+            7. If no shape is identified, we don't have a main zone.
+            '''
             #Initialize current zone and center
             current_zone = None
             center = None
-            #Loop over the contours
-            for contour in contours:
-                #If the contour is big enough, calculate its center
-                if cv2.contourArea(contour) > self.sensitivity:
-                    (x, y, w, h) = cv2.boundingRect(contour)
-                    center = (int(x + w/2), int(y + h/2))
-                    self.rat_positions.append(center)
-                    #Check if the center is inside any zone
-                    zone_areas = [(i+1, zw*zh) for i, (zx, zy, zw, zh) in enumerate(self.zones) if zx < center[0] < zx + zw and zy < center[1] < zy + zh]
-                    if zone_areas:
-                        zone_areas.sort(key=lambda x: x[1])
-                        current_zone = zone_areas[0][0]
-            #If no zone is found, use the last known zone and the last known position
+            # Find the largest contour with area greater than sensitivity
+            largest_contour = max((contour for contour in contours if cv2.contourArea(contour) > self.sensitivity), key=cv2.contourArea, default=None)
+            # If a valid largest contour is found, perform the operations
+            if largest_contour is not None:
+                (x, y, w, h) = cv2.boundingRect(largest_contour)
+                center = (int(x + w/2), int(y + h/2))
+                self.rat_positions.append(center)
+                # Check if the center is inside any zone
+                zone_areas = [(i+1, zw*zh) for i, (zx, zy, zw, zh) in enumerate(self.zones) if zx < center[0] < zx + zw and zy < center[1] < zy + zh]
+                if zone_areas:
+                    zone_areas.sort(key=lambda x: x[1])
+                    current_zone = zone_areas[0][0]
+            else:
+                current_zone = None
+            # If no zone is found, use the last known zone and the last known position
             if current_zone is None and self.last_known_zone is not None:
                 current_zone = self.last_known_zone
                 center = self.rat_positions[-1] if self.rat_positions else None
-            #If a zone is found, update the last known zone
+            # If a zone is found, update the last known zone
             elif current_zone is not None:
                 self.last_known_zone = current_zone
             #Write the current time, position and zone to the CSV file

@@ -74,7 +74,7 @@ class PawsitionPatrol:
         plt.colorbar(label='Time')
         plt.xlabel('Position X')
         plt.ylabel('Position Y')
-        plt.title('Path of the rat in the maze over time')
+        plt.title('Path of the hamster in the maze over time')
         plt.gca().invert_yaxis()  
         plt.grid(True)
 
@@ -84,7 +84,7 @@ class PawsitionPatrol:
         plt.colorbar(label='Frequency')
         plt.xlabel('Position X')
         plt.ylabel('Position Y')
-        plt.title("Heatmap of the rat's positions in the maze")
+        plt.title("Heatmap of the hamster's positions in the maze")
         plt.gca().invert_yaxis()
         plt.grid(True)
 
