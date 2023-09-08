@@ -160,18 +160,20 @@ class PawsitionPatrol:
             self.write_zone_times_to_csv()
             self.plot_data()
 
-def select_file():
+def select_files():
     root = tk.Tk()
-    root.withdraw() 
-    return filedialog.askopenfilename(title="Select CSV file", filetypes=(("CSV files", "*.csv"),))
+    root.withdraw()
+    return filedialog.askopenfilenames(title="Select CSV files", filetypes=(("CSV files", "*.csv"),))
 
 def main():
-    file_path = select_file()
-    if file_path:
-        patrol = PawsitionPatrol(file_path)
-        patrol.run()
+    file_paths = select_files()
+    if file_paths:
+        for file_path in file_paths:
+            print(f"Processing file: {file_path}")
+            patrol = PawsitionPatrol(file_path)
+            patrol.run()
     else:
-        print("No file selected.")
+        print("No files selected.")
 
 if __name__ == "__main__":
     main()
