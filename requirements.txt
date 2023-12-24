@@ -1,5 +1,5 @@
+pandas
+matplotlib
+Pillow
 opencv-python
 numpy
-scipy
-matplotlib
-pandas
