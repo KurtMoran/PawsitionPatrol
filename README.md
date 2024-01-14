@@ -2,7 +2,7 @@
 
 ![PawPat](https://github.com/KurtMoran/PawsitionPatrol/assets/49537465/81d85cf5-e1bb-477d-b87f-83c6d8ccd737)
 
-PawsitionPatrol is a cool program that lets you track and monitor the movement of a single animal over time, perfect for lab studies where the animal you're interested in is the only thing moving in the video. It's a handy tool for researchers to observe and analyze animal behavior in controlled environments.
+PawsitionPatrol is a  program that lets you track and monitor the movement of a single animal over time, for lab studies where the animal you're interested in is the only thing moving in the video. It's a tool for researchers to observe and analyze animal behavior in controlled environments.
 
 ## Features
 
