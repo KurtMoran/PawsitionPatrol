@@ -34,10 +34,11 @@ class PawsitionPatrol:
         data_with_distances['Distance'] = np.sqrt(data_with_distances['Position X'].diff() ** 2 + data_with_distances['Position Y'].diff() ** 2)
         data_with_distances['Distance'].fillna(0, inplace=True)
 
-        mean_distance = data_with_distances['Distance'].mean()
+        # Use median for calculating the outlier threshold
+        median_distance = data_with_distances['Distance'].median()
         std_distance = data_with_distances['Distance'].std()
 
-        outlier_threshold = mean_distance + 3 * std_distance
+        outlier_threshold = median_distance + 3 * std_distance
         outliers = data_with_distances[data_with_distances['Distance'] > outlier_threshold]
         data_without_outliers = data_with_distances[data_with_distances['Distance'] <= outlier_threshold]
 
@@ -50,7 +51,7 @@ class PawsitionPatrol:
         output_dir = os.path.dirname(self.file_path)
         output_file_path = os.path.join(output_dir, self.subject + '_Distance_Traveled.csv')
 
-        with open(output_file_path, 'w', newline='') as f:  # Set newline to '' to avoid extra blank lines
+        with open(output_file_path, 'w', newline='') as f:
             valid_data.to_csv(f, index=False)
             f.write('\nOutliers\n')
             outliers.to_csv(f, index=False)
