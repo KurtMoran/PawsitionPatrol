@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import tkinter as tk
+import numpy as np
 from tkinter import filedialog
 import matplotlib.animation as animation
 import matplotlib.colors as mcolors
@@ -27,6 +28,34 @@ class PawsitionPatrol:
 
     def clean_data(self):
         return self.data.dropna(subset=['Position X', 'Position Y'])
+    
+    def calculate_distances(self):
+        data_with_distances = self.data_clean.copy()
+        data_with_distances['Distance'] = np.sqrt(data_with_distances['Position X'].diff() ** 2 + data_with_distances['Position Y'].diff() ** 2)
+        data_with_distances['Distance'].fillna(0, inplace=True)
+
+        mean_distance = data_with_distances['Distance'].mean()
+        std_distance = data_with_distances['Distance'].std()
+
+        outlier_threshold = mean_distance + 3 * std_distance
+        outliers = data_with_distances[data_with_distances['Distance'] > outlier_threshold]
+        data_without_outliers = data_with_distances[data_with_distances['Distance'] <= outlier_threshold]
+
+        data_without_outliers['Cumulative Distance'] = data_without_outliers['Distance'].cumsum()
+
+        return data_without_outliers, outliers
+
+    def write_distance_data_to_csv(self):
+        valid_data, outliers = self.calculate_distances()
+        output_dir = os.path.dirname(self.file_path)
+        output_file_path = os.path.join(output_dir, self.subject + '_Distance_Traveled.csv')
+
+        with open(output_file_path, 'w', newline='') as f:  # Set newline to '' to avoid extra blank lines
+            valid_data.to_csv(f, index=False)
+            f.write('\nOutliers\n')
+            outliers.to_csv(f, index=False)
+
+        print(f"Distance data and outliers saved to {output_file_path}")
 
     def analyze_data(self):
         data_sorted = self.data_clean.sort_values('Time')
@@ -158,6 +187,7 @@ class PawsitionPatrol:
         if self.data is not None:
             self.write_zone_latency_to_csv()
             self.write_zone_times_to_csv()
+            self.write_distance_data_to_csv()  # Save distance data to CSV
             self.plot_data()
 
 def select_files():
