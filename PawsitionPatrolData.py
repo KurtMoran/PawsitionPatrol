@@ -34,17 +34,18 @@ class PawsitionPatrol:
         data_with_distances['Distance'] = np.sqrt(data_with_distances['Position X'].diff() ** 2 + data_with_distances['Position Y'].diff() ** 2)
         data_with_distances['Distance'].fillna(0, inplace=True)
 
-        # Use median for calculating the outlier threshold
         median_distance = data_with_distances['Distance'].median()
         std_distance = data_with_distances['Distance'].std()
 
         outlier_threshold = median_distance + 3 * std_distance
-        outliers = data_with_distances[data_with_distances['Distance'] > outlier_threshold]
-        data_without_outliers = data_with_distances[data_with_distances['Distance'] <= outlier_threshold]
+        outlier_mask = data_with_distances['Distance'] > outlier_threshold
+        outliers = data_with_distances[outlier_mask]
 
-        data_without_outliers['Cumulative Distance'] = data_without_outliers['Distance'].cumsum()
+        # Create an independent copy after filtering
+        valid_data = data_with_distances[~outlier_mask].copy()
+        valid_data['Cumulative Distance'] = valid_data['Distance'].cumsum()
 
-        return data_without_outliers, outliers
+        return valid_data, outliers
 
     def write_distance_data_to_csv(self):
         valid_data, outliers = self.calculate_distances()
